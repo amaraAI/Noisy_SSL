@@ -1,0 +1,9 @@
+/data
+/lightning_logs
+/ssl
+/__pycache__
+/simsiam_cifar10
+*.ckpt
+*.out
+*.sh
+/old
