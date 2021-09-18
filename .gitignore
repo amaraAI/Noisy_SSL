@@ -1,6 +1,6 @@
 /data
 /lightning_logs
-/ssl
+/myssl
 /__pycache__
 /simsiam_cifar10
 *.ckpt

@@ -6,22 +6,27 @@ import torchvision
 
 
 class SimsiamModel(pl.LightningModule):
-    def __init__(self, backbone_type='resnet-18', max_epochs=100, num_ftrs=512, proj_hidden_dim=512, pred_hidden_dim=128, out_dim = 512, num_mlp_layers=2,batch_shuffle=True, lr=0.05 * 128 /256, momentum=0.9, weight_decay=5e-4):
+    def __init__(self,batch_size,input_size,lr,num_ftrs,max_epochs, backbone_type, momentum=0.9, weight_decay=5e-4):
         super().__init__()
-        self.lr = lr
+        self.num_ftrs= num_ftrs
+        self.lr = lr * batch_size / input_size
+        self.proj_hidden_dim = num_ftrs
+        self.pred_hidden_dim = int(num_ftrs/4)
+        self.out_dim = num_ftrs
         self.weight_decay = weight_decay
         self.momentum = momentum
         self.max_epochs = max_epochs
 
         # create a ResNet backbone and remove the classification head
-        resnet = torchvision.models.resnet18()
+        if backbone_type == 'resnet18':
+            resnet = torchvision.models.resnet18()
         backbone = nn.Sequential(
             *list(resnet.children())[:-1],
         )
 
         # create a simsiam based on ResNet
         self.resnet_simsiam = \
-            model = lightly.models.SimSiam(backbone,num_ftrs=num_ftrs,proj_hidden_dim=proj_hidden_dim,pred_hidden_dim=pred_hidden_dim,out_dim=out_dim,num_mlp_layers=num_mlp_layers)
+            model = lightly.models.SimSiam(backbone,num_ftrs=self.num_ftrs,proj_hidden_dim=self.proj_hidden_dim,pred_hidden_dim=self.pred_hidden_dim,out_dim=self.out_dim)
         # create our loss with the optional memory bank
         self.criterion = lightly.loss.SymNegCosineSimilarityLoss()
 
