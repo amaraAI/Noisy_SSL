@@ -6,10 +6,10 @@ import torchvision
 
 
 class SimsiamModel(pl.LightningModule):
-    def __init__(self,batch_size,input_size,lr,num_ftrs,max_epochs, backbone_type, momentum=0.9, weight_decay=5e-4):
+    def __init__(self,batch_size=256,input_size=32,lr=0.05,num_ftrs=512,max_epochs=300, backbone_type='resnet18', momentum=0.9, weight_decay=5e-4):
         super().__init__()
         self.num_ftrs= num_ftrs
-        self.lr = lr * batch_size / input_size
+        self.lr = lr #* batch_size / input_size
         self.proj_hidden_dim = num_ftrs
         self.pred_hidden_dim = int(num_ftrs/4)
         self.out_dim = num_ftrs
@@ -27,7 +27,7 @@ class SimsiamModel(pl.LightningModule):
         # create a simsiam based on ResNet
         self.resnet_simsiam = \
             model = lightly.models.SimSiam(backbone,num_ftrs=self.num_ftrs,proj_hidden_dim=self.proj_hidden_dim,pred_hidden_dim=self.pred_hidden_dim,out_dim=self.out_dim)
-        # create our loss with the optional memory bank
+        # create our loss with the optional
         self.criterion = lightly.loss.SymNegCosineSimilarityLoss()
 
     def forward(self, x):
@@ -41,6 +41,7 @@ class SimsiamModel(pl.LightningModule):
                 name, params, self.current_epoch)
 
     def training_step(self, batch, batch_idx):
+        #print("THE BATCH SIZE IS", batch)
         (x0, x1), _, _ = batch
         y0, y1 = self.resnet_simsiam(x0, x1)
         loss = self.criterion(y0, y1)

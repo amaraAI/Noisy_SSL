@@ -4,8 +4,9 @@ import torch.nn as nn
 import lightly
 
 class Classifier(pl.LightningModule):
-    def __init__(self, model, lr=30., max_epochs=100):
+    def __init__(self, model, lr=30., max_epochs=100, numftrs_clf=512, num_classes= 10 ):
         super().__init__()
+        print("the learning rate is ", lr)
 
         self.lr = lr
         self.max_epochs = max_epochs
@@ -13,13 +14,13 @@ class Classifier(pl.LightningModule):
         # create a simsiam based on ResNet
         self.resnet_simsiam = model
 
-        # freeze the layers of moco
+        # freeze the layers of simsiam
         for p in self.resnet_simsiam.parameters():  # reset requires_grad
             p.requires_grad = False
 
         # we create a linear layer for our downstream classification
         # model
-        self.fc = nn.Linear(512, 10)
+        self.fc = nn.Linear(numftrs_clf, num_classes)
 
         self.accuracy = pl.metrics.Accuracy()
 
@@ -38,7 +39,7 @@ class Classifier(pl.LightningModule):
                 name, params, self.current_epoch)
 
     def training_step(self, batch, batch_idx):
-        x, y, _ = batch
+        x, y = batch
         y_hat = self.forward(x)
         loss = nn.functional.cross_entropy(y_hat, y)
         self.log('train_loss_fc', loss)
@@ -48,7 +49,7 @@ class Classifier(pl.LightningModule):
         self.custom_histogram_weights()
 
     def validation_step(self, batch, batch_idx):
-        x, y, _ = batch
+        x, y = batch
         y_hat = self.forward(x)
         y_hat = torch.nn.functional.softmax(y_hat, dim=1)
         self.accuracy(y_hat, y)
