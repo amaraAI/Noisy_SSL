@@ -89,32 +89,21 @@ if args.train_mode == "simsiam":
 
 if args.train_mode == "simsiam_classifier":
     # Augmentations typically used to train on cifar-10
-    '''
+    
+
+    
     train_classifier_transforms = torchvision.transforms.Compose([
         torchvision.transforms.RandomCrop(32, padding=4),
         torchvision.transforms.RandomHorizontalFlip(),
         torchvision.transforms.ToTensor(),
-        torchvision.transforms.Normalize(
-            mean=lightly.data.collate.imagenet_normalize['mean'],
-            std=lightly.data.collate.imagenet_normalize['std'],
-        )
-    ])
-    '''
-
-    train_classifier_transforms = transforms.Compose([
-        transforms.RandomResizedCrop(32, scale=(0.8, 1.0),
-                                     ratio=(3.0 / 4.0, 4.0 / 3.0),
-                                     interpolation=Image.BICUBIC),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
     ])
+    
     test_transforms = transforms.Compose([
-        transforms.Resize(int(32 * (8 / 7)), interpolation=Image.BICUBIC),
-        #transforms.CenterCrop(32),
         transforms.ToTensor(),
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
     ])
+    
 
     # No additional augmentations for the test set
     '''
@@ -127,20 +116,26 @@ if args.train_mode == "simsiam_classifier":
         )
     ])
     '''
-
+    '''
+    base = torchvision.datasets.CIFAR10(root=args.data,train=True,download=False)
+    dataset_train_classifier = data.LightlyDataset(base,transform=train_classifier_transforms)
+    base_test = torchvision.datasets.CIFAR10(root=args.data,train=False,download=False)
+    dataset_test = data.LightlyDataset.from_torch_dataset(base_test,transform=test_transforms)
+    '''
     dataset_train_classifier = NoisyCIFAR10(root=args.data, 
                                        train=True, 
                                        download=True, 
                                        noise_type=args.noise_type, 
                                        noise_rate=args.noise_rate, 
                                        transform=train_classifier_transforms)
-
+    
     dataset_test = NoisyCIFAR10(root=args.data, 
                                         train=False, 
                                         download=True,
                                         noise_type=args.noise_type, 
                                        noise_rate=args.noise_rate,
                                         transform=test_transforms)
+    
 
     dataloader_train_classifier = torch.utils.data.DataLoader(
                                             dataset_train_classifier,

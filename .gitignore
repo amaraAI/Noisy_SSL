@@ -8,3 +8,4 @@
 *.out
 *.sh
 /old
+*.input
