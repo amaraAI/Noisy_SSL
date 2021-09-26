@@ -160,8 +160,8 @@ if args.train_mode == "simsiam_classifier":
 
 if args.train_mode == "simsiam":
 
-    #model = SimsiamModel(batch_size=args.batch_size_ssl,input_size=args.input_size,lr=args.lr_ssl,num_ftrs=args.num_ftrs_ssl,max_epochs=args.max_epochs_ssl, backbone_type=args.backbone_model, momentum=0.9, weight_decay=5e-4)
-    model = SimsiamModel()
+    model = SimsiamModel(batch_size=args.batch_size_ssl,input_size=args.input_size,lr=args.lr_ssl,num_ftrs=args.num_ftrs_ssl,max_epochs=args.max_epochs_ssl, backbone_type=args.backbone_model, momentum=0.9, weight_decay=5e-4)
+    #model = SimsiamModel()
 
     trainer = pl.Trainer(max_epochs=args.max_epochs_ssl, gpus=gpus,progress_bar_refresh_rate=100)
     trainer.fit(

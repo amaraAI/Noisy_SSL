@@ -69,8 +69,9 @@ if args.train_mode == "byol_ssl":
         transforms.RandomApply([transforms.ColorJitter(0.8, 0.8, 0.8, 0.2)],p = 0.3),
         transforms.RandomGrayscale(p=0.2),
         transforms.RandomHorizontalFlip(),
-        transforms.RandomApply([transforms.GaussianBlur((3, 3), (1.0, 2.0)],p = 0.2),
-        transforms.RandomResizedCrop((image_size, image_size)),
+        transforms.RandomApply([transforms.GaussianBlur((3, 3), (1.0, 2.0))],p = 0.2),
+        transforms.RandomResizedCrop((args.input_size,args.input_size)),
+        transforms.ToTensor(),
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))
     ])
         
@@ -106,7 +107,7 @@ if args.train_mode == "byol_classifier":
 
     # No additional augmentations for the test set
     # '~projects/def-jjclark/shared_data/CIFAR10_noisy_checkpoints/cifar10_noise_sym_0.1.pkl' 
-    if args.path = None:
+    if args.path == None:
         dataset_train_classifier = NoisyCIFAR10.load_(path_ = args.path)
     
     base_test = torchvision.datasets.CIFAR10(root=args.data,train=False,download=False)
@@ -131,9 +132,7 @@ if args.train_mode == "byol_classifier":
 
 if args.train_mode == "byol_ssl":
 
-    #model = SimsiamModel(batch_size=args.batch_size_ssl,input_size=args.input_size,lr=args.lr_ssl,num_ftrs=args.num_ftrs_ssl,max_epochs=args.max_epochs_ssl, backbone_type=args.backbone_model, momentum=0.9, weight_decay=5e-4)
-    model = BYOLModel()
-
+    model = BYOLModel(batch_size=args.batch_size_ssl,input_size=args.input_size,lr=args.lr_ssl,num_ftrs=args.num_ftrs_ssl,max_epochs=args.max_epochs_ssl, backbone_type=args.backbone_model, momentum=0.9, weight_decay=5e-4)
     trainer = pl.Trainer(max_epochs=args.max_epochs_ssl, gpus=gpus,progress_bar_refresh_rate=100)
     trainer.fit(
         model,
@@ -144,6 +143,8 @@ if args.train_mode == "byol_ssl":
 if args.train_mode == "byol_classifier":
     # load SIMSIAM model
     model = BYOLModel()
+    #model = BYOLModel(batch_size=args.batch_size_ssl,input_size=args.input_size,lr=args.lr_ssl,num_ftrs=args.num_ftrs_ssl,max_epochs=args.max_epochs_ssl, backbone_type=args.backbone_model, momentum=0.9, weight_decay=5e-4)
+
     assert args.checkpoint != None
     model = model.load_from_checkpoint(args.checkpoint)
     model.eval()

@@ -105,7 +105,7 @@ class BYOLModel(pl.LightningModule):
         self.custom_histogram_weights()
 
     def configure_optimizers(self):
-        optim = torch.optim.SGD(self.resnet_simsiam.parameters(), lr=self.lr,
+        optim = torch.optim.SGD(self.resnet_byol.parameters(), lr=self.lr,
                                 momentum=self.momentum, weight_decay=self.weight_decay)
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optim, self.max_epochs)
         return [optim], [scheduler]
