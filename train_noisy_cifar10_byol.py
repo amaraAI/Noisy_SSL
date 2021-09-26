@@ -3,7 +3,7 @@ import torch.nn as nn
 import torchvision
 import pytorch_lightning as pl
 import lightly
-from model import SimsiamModel
+from model import SimsiamModel, BYOLModel
 from classifier import Classifier
 import lightly.data as data
 import time 
@@ -12,7 +12,7 @@ from pathlib import Path
 from dataloader import NoisyCIFAR10
 import torchvision.transforms as transforms
 
-parser = argparse.ArgumentParser(description='SimSiam Training')
+parser = argparse.ArgumentParser(description='BYOL Training')
 #shared parameters
 parser.add_argument('--data', type=Path, default='data', metavar='DIR',
                     help='path to dataset')
@@ -37,6 +37,7 @@ parser.add_argument('--lr_ssl', default=0.05, type=float, help = 'initial learni
 parser.add_argument('--savename_ssl', default="checkpoint_ssl.ckpt",type=str)
 
 #paramters related to classifier training
+parser.add_argument('--path', default=None,type=str,help='path to the noisy dataset for classification')
 parser.add_argument('--checkpoint', default="checkpoint_ssl.ckpt",type=str)
 parser.add_argument('--max_epochs_clf', default=300, type=int, metavar='N',
                     help='number of total epochs to run for the classsifier')
@@ -58,28 +59,26 @@ pl.seed_everything(args.seed)
 
 #loads cifar 10 from torchvision
 # load cifar10 from torchvision
-if args.train_mode == "simsiam":
+if args.train_mode == "byol_ssl":
     base = torchvision.datasets.CIFAR10(root=args.data,train=True,download=False)
-    dataset_train_simsiam = data.LightlyDataset.from_torch_dataset(base)
+    dataset_train = data.LightlyDataset.from_torch_dataset(base)
 
+    # AUGMENTATIONS RELATED TO BYOL 
 
-    train_transforms = transforms.Compose([
-        transforms.RandomResizedCrop(args.input_size, scale=(0.2, 1.)),
-        transforms.RandomHorizontalFlip(),
-        transforms.RandomApply([
-            transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)  # not strengthened
-        ], p=0.8),
+    train_transforms =transforms.Compose([
+        transforms.RandomApply([transforms.ColorJitter(0.8, 0.8, 0.8, 0.2)],p = 0.3),
         transforms.RandomGrayscale(p=0.2),
-        transforms.ToTensor(),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomApply([transforms.GaussianBlur((3, 3), (1.0, 2.0)],p = 0.2),
+        transforms.RandomResizedCrop((image_size, image_size)),
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))
     ])
-
-
+        
     collate_fn = lightly.data.collate.BaseCollateFunction(train_transforms)
 
-    # The dataloader for this simsiam mode
-    dataloader_train_simsiam = torch.utils.data.DataLoader(
-        dataset_train_simsiam,
+    # The dataloader for this byol ssl mode
+    dataloader_train_byol = torch.utils.data.DataLoader(
+        dataset_train,
         batch_size=args.batch_size_ssl,
         shuffle=True,
         collate_fn=collate_fn,
@@ -88,7 +87,7 @@ if args.train_mode == "simsiam":
     )
 
 
-if args.train_mode == "simsiam_classifier":
+if args.train_mode == "byol_classifier":
     # Augmentations typically used to train on cifar-10
     
 
@@ -106,40 +105,12 @@ if args.train_mode == "simsiam_classifier":
     
 
     # No additional augmentations for the test set
-    '''
-    test_transforms = torchvision.transforms.Compose([
-        torchvision.transforms.Resize((32, 32)),
-        torchvision.transforms.ToTensor(),
-        torchvision.transforms.Normalize(
-            mean=lightly.data.collate.imagenet_normalize['mean'],
-            std=lightly.data.collate.imagenet_normalize['std'],
-        )
-    ])
-    '''
-    '''
-    base = torchvision.datasets.CIFAR10(root=args.data,train=True,download=False)
-    dataset_train_classifier = data.LightlyDataset(base,transform=train_classifier_transforms)
-    base_test = torchvision.datasets.CIFAR10(root=args.data,train=False,download=False)
-    dataset_test = data.LightlyDataset.from_torch_dataset(base_test,transform=test_transforms)
-    '''
-    '''
-    dataset_train_classifier = NoisyCIFAR10(root=args.data, 
-                                       train=True, 
-                                       download=True, 
-                                       noise_type=args.noise_type, 
-                                       noise_rate=args.noise_rate, 
-                                       transform=train_classifier_transforms)
-
-    '''
-    if args.noise_type == "sym" and args.noise_rate ==0.1 :
-        dataset_train_classifier = NoisyCIFAR10.load_(path_ = '~projects/def-jjclark/shared_data/CIFAR10_noisy_checkpoints/cifar10_noise_sym_0.1.pkl')
+    # '~projects/def-jjclark/shared_data/CIFAR10_noisy_checkpoints/cifar10_noise_sym_0.1.pkl' 
+    if args.path = None:
+        dataset_train_classifier = NoisyCIFAR10.load_(path_ = args.path)
     
-    dataset_test = NoisyCIFAR10(root=args.data, 
-                                        train=False, 
-                                        download=True,
-                                        noise_type=args.noise_type, 
-                                       noise_rate=args.noise_rate,
-                                        transform=test_transforms)
+    base_test = torchvision.datasets.CIFAR10(root=args.data,train=False,download=False)
+    dataset_test = data.LightlyDataset.from_torch_dataset(base_test)
     
 
     dataloader_train_classifier = torch.utils.data.DataLoader(
@@ -158,25 +129,25 @@ if args.train_mode == "simsiam_classifier":
 
 
 
-if args.train_mode == "simsiam":
+if args.train_mode == "byol_ssl":
 
     #model = SimsiamModel(batch_size=args.batch_size_ssl,input_size=args.input_size,lr=args.lr_ssl,num_ftrs=args.num_ftrs_ssl,max_epochs=args.max_epochs_ssl, backbone_type=args.backbone_model, momentum=0.9, weight_decay=5e-4)
-    model = SimsiamModel()
+    model = BYOLModel()
 
     trainer = pl.Trainer(max_epochs=args.max_epochs_ssl, gpus=gpus,progress_bar_refresh_rate=100)
     trainer.fit(
         model,
-        dataloader_train_simsiam)
+        dataloader_train_byol)
     #trainer.save_checkpoint(args.savename_ssl)
     
 
-if args.train_mode == "simsiam_classifier":
+if args.train_mode == "byol_classifier":
     # load SIMSIAM model
-    model = SimsiamModel()
+    model = BYOLModel()
     assert args.checkpoint != None
     model = model.load_from_checkpoint(args.checkpoint)
     model.eval()
-    classifier = Classifier(model.resnet_simsiam, lr=args.lr_clf, max_epochs=args.max_epochs_clf,numftrs_clf=args.num_ftrs_clf,num_classes=10)
+    classifier = Classifier(model.resnet_byol, lr=args.lr_clf, max_epochs=args.max_epochs_clf,numftrs_clf=args.num_ftrs_clf,num_classes=10)
     trainer = pl.Trainer(max_epochs=args.max_epochs_clf, gpus=gpus,
                      progress_bar_refresh_rate=100)
     trainer.fit(

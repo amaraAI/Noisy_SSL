@@ -12,10 +12,10 @@ class Classifier(pl.LightningModule):
         self.max_epochs = max_epochs
 
         # create a simsiam based on ResNet
-        self.resnet_simsiam = model
+        self.resnet_ssl = model
 
         # freeze the layers of simsiam
-        for p in self.resnet_simsiam.parameters():  # reset requires_grad
+        for p in self.resnet_ssl.parameters():  # reset requires_grad
             p.requires_grad = False
 
         # we create a linear layer for our downstream classification
@@ -26,7 +26,7 @@ class Classifier(pl.LightningModule):
 
     def forward(self, x):
         with torch.no_grad():
-            y_hat = self.resnet_simsiam.backbone(x).squeeze()
+            y_hat = self.resnet_ssl.backbone(x).squeeze()
             y_hat = nn.functional.normalize(y_hat, dim=1)
         y_hat = self.fc(y_hat)
         return y_hat
@@ -60,3 +60,4 @@ class Classifier(pl.LightningModule):
         optim = torch.optim.SGD(self.fc.parameters(), lr=self.lr)
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optim, self.max_epochs)
         return [optim], [scheduler]
+
