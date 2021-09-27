@@ -39,7 +39,7 @@ class Classifier(pl.LightningModule):
                 name, params, self.current_epoch)
 
     def training_step(self, batch, batch_idx):
-        x, y = batch
+        x, y, _ = batch
         y_hat = self.forward(x)
         loss = nn.functional.cross_entropy(y_hat, y)
         self.log('train_loss_fc', loss)
@@ -49,7 +49,7 @@ class Classifier(pl.LightningModule):
         self.custom_histogram_weights()
 
     def validation_step(self, batch, batch_idx):
-        x, y = batch
+        x, y, _ = batch
         y_hat = self.forward(x)
         y_hat = torch.nn.functional.softmax(y_hat, dim=1)
         self.accuracy(y_hat, y)

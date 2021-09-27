@@ -37,7 +37,7 @@ parser.add_argument('--lr_ssl', default=0.05, type=float, help = 'initial learni
 parser.add_argument('--savename_ssl', default="checkpoint_ssl.ckpt",type=str)
 
 #paramters related to classifier training
-parser.add_argument('--path', default=None,type=str,help='path to the noisy dataset for classification')
+parser.add_argument('--noisydata', default=True,type=bool,help='if True the data is from a pkl file')
 parser.add_argument('--checkpoint', default="checkpoint_ssl.ckpt",type=str)
 parser.add_argument('--max_epochs_clf', default=300, type=int, metavar='N',
                     help='number of total epochs to run for the classsifier')
@@ -107,12 +107,25 @@ if args.train_mode == "byol_classifier":
 
     # No additional augmentations for the test set
     # '~projects/def-jjclark/shared_data/CIFAR10_noisy_checkpoints/cifar10_noise_sym_0.1.pkl' 
-    if args.path == None:
-        dataset_train_classifier = NoisyCIFAR10.load_(path_ = args.path)
+    if args.noisydata == True:
+        path_ = '/home/iamara/projects/def-jjclark/shared_data/CIFAR10_noisy_checkpoints/cifar10_noise_'+args.noise_type+'_'+str(args.noise_rate)+'.pkl'
+        dataset_train_classifier_ = NoisyCIFAR10.load_(path_)
+        dataset_train_classifier = lightly.data.LightlyDataset.from_torch_dataset(dataset=dataset_train_classifier_) 
+
+    else: 
+        dataset_train_classifier = NoisyCIFAR10(root=args.data, 
+                                        train=True, 
+                                        download=True,
+                                        noise_type=args.noise_type, 
+                                        noise_rate=args.noise_rate,
+                                        transform=train_classifier_transforms)
     
-    base_test = torchvision.datasets.CIFAR10(root=args.data,train=False,download=False)
+
+
+    base_test = torchvision.datasets.CIFAR10(root=args.data,train=False,download=False,transform=test_transforms)
     dataset_test = data.LightlyDataset.from_torch_dataset(base_test)
-    
+        
+        
 
     dataloader_train_classifier = torch.utils.data.DataLoader(
                                             dataset_train_classifier,

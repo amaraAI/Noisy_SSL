@@ -131,16 +131,22 @@ if args.train_mode == "simsiam_classifier":
                                        transform=train_classifier_transforms)
 
     '''
-    if args.noise_type == "sym" and args.noise_rate ==0.1 :
-        dataset_train_classifier = NoisyCIFAR10.load_(path_ = '~projects/def-jjclark/shared_data/CIFAR10_noisy_checkpoints/cifar10_noise_sym_0.1.pkl')
-    
-    dataset_test = NoisyCIFAR10(root=args.data, 
-                                        train=False, 
+    if args.noisydata == True:
+        path_ = '/home/iamara/projects/def-jjclark/shared_data/CIFAR10_noisy_checkpoints/cifar10_noise_'+args.noise_type+'_'+str(args.noise_rate)+'.pkl'
+        dataset_train_classifier_ = NoisyCIFAR10.load_(path_)
+        dataset_train_classifier = lightly.data.LightlyDataset.from_torch_dataset(dataset=dataset_train_classifier_) 
+
+    else: 
+        dataset_train_classifier = NoisyCIFAR10(root=args.data, 
+                                        train=True, 
                                         download=True,
                                         noise_type=args.noise_type, 
-                                       noise_rate=args.noise_rate,
-                                        transform=test_transforms)
+                                        noise_rate=args.noise_rate,
+                                        transform=train_classifier_transforms)
     
+    base_test = torchvision.datasets.CIFAR10(root=args.data,train=False,download=False,transform=test_transforms)
+    dataset_test = data.LightlyDataset.from_torch_dataset(base_test)
+           
 
     dataloader_train_classifier = torch.utils.data.DataLoader(
                                             dataset_train_classifier,
