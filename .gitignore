@@ -9,3 +9,9 @@
 *.sh
 /old
 *.input
+/Saved_models
+/Saved_models_512_temp_0_1
+/Saved_models_512_temp_0_5
+/Saved_models_4096_temp_0_5
+/outputs
+/noisy_ssl
